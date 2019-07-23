@@ -53,17 +53,22 @@ abstract class BaseConverter(sources: Seq[Source]) {
     }
   }
 
+  protected def head:String = ""
+
   protected def generateExtra(stat:Stat):String = ""
 
   def export(): String = {
-    sources.flatMap(skipPackage).filter(filter).map { stat =>
-      s"""
-         |${generateInterface(stat)}
+    val classes = sources.flatMap(skipPackage).filter(filter).map { stat =>
+      s"""${generateInterface(stat)}
          |
          |${generateExtra(stat)}
          |
        """.stripMargin.trim
     }.mkString("\n\n")
+
+    s"""$head
+       |
+       |$classes""".stripMargin.trim
 
   }
 

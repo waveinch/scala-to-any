@@ -97,18 +97,18 @@ class Dart(sources: Seq[Source]) extends BaseConverter(sources) {
 
     typ match {
       case t: Type.Name => {
-        val typ = typeMapping(t.value)
-        if(jsonBaseType(typ) || typ == "Map<String,dynamic>") {
-          base
-        } else {
-          s"$base != null ? $typ.fromJson($base) : null"
+        typeMapping(t.value) match {
+          case "double" => s"$base != null ? (($base is int) ? ($base as int).toDouble() : $base) : null"
+          case "bool" | "String" | "int" | "Map<String,dynamic>" => base
+          case typ => s"$base != null ? $typ.fromJson($base) : null"
         }
+
       }
       case t: Type.Apply => {
         (jsonBaseType(toType(t.args.head)),toType(t.tpe)) match {
           case (_,"") => castToType(base,t.args.head); //option
           case (true,_) => s"$base != null ? ($base as ${toType(t.tpe)}).cast<${toType(t.args.head)}>() : null"
-          case (false,_) => s"$base != null ? ($base as ${toType(t.tpe)}).map((x) => ${toType(t.args.head)}.fromJson(x)) : null"
+          case (false,_) => s"$base != null ? ($base as ${toType(t.tpe)}).map((x) => ${toType(t.args.head)}.fromJson(x)).toList() : null"
         }
       }
       case t: Type.Select => castToType(base, t.name)
@@ -126,6 +126,8 @@ class Dart(sources: Seq[Source]) extends BaseConverter(sources) {
     }
 
   }
+
+  override protected def head:String = "import 'package:meta/meta.dart';"
 
   override protected def generateBody(name:String, stats: Seq[Tree]): String = {
 
